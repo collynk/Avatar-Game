@@ -1,0 +1,79 @@
+# Define the rooms
+locations = {
+    'Fire Hall': {'east': 'Water Hall', 'south': 'Muddy Room'},
+    'Water Hall': {'west': 'Fire Hall', 'east': 'Air Hall', 'south': 'Steam Room'},
+    'Air Hall': {'west': 'Water Hall', 'east': 'Earth Hall', 'south': 'Dust Room'},
+    'Earth Hall': {'west': 'Air Hall', 'south': 'Lava Room'},
+    'Muddy Room': {'north': 'Fire Hall'},
+    'Steam Room': {'north': 'Water Hall'},
+    'Dust Room': {'north': 'Air Hall'},
+    'Lava Room': {'north': 'Earth Hall', 'east': 'Final Boss Lair'},
+    'Final Boss Lair': {}
+}
+
+# Items located in different locations
+artifacts = {
+    'Water Hall': 'Scroll of Water',
+    'Earth Hall': 'Scroll of Earth',
+    'Fire Hall': 'Scroll of Fire',
+    'Air Hall': 'Scroll of Air',
+    'Lava Room': 'Lava Staff',
+    'Steam Room': 'Mist Book',
+    'Dust Room': 'Dusty Sword'
+}
+
+# Track player's inventory and position
+backpack = []
+current_location = 'Fire Hall'
+boss_unlocked = False
+
+def display_status():
+    print(f"\nYou are currently in the {current_location}.")
+    print(f"Inventory: {backpack}")
+    if current_location in artifacts:
+        print(f"There is a {artifacts[current_location]} here.")
+
+def navigate(direction):
+    global current_location, boss_unlocked
+    
+    if current_location == 'Lava Room' and not boss_unlocked:
+        if len(backpack) == len(artifacts):
+            locations['Lava Room']['east'] = 'Final Boss Lair'
+            boss_unlocked = True
+            print("The path to the Final Boss Lair has been revealed!")
+    
+    if direction in locations[current_location]:
+        current_location = locations[current_location][direction]
+        print(f"You head {direction} and arrive at the {current_location}.")
+        display_status()
+        prompt_pick_up_item()
+    else:
+        print(f"Cannot go {direction} from {current_location}. That direction is unavailable.")
+
+def prompt_pick_up_item():
+    if current_location in artifacts and artifacts[current_location] not in backpack:
+        choice = input(f"Do you want to pick up the {artifacts[current_location]}? (yes/no): ").strip().lower()
+        if choice == 'yes':
+            backpack.append(artifacts[current_location])
+            print(f"You have acquired the {artifacts[current_location]}!")
+        else:
+            print(f"You chose not to pick up the {artifacts[current_location]}.")
+    else:
+        print("There's nothing to collect here.")
+
+def start_adventure():
+    print("Welcome to the Avatar-themed Adventure!")
+    print("Your quest is to gather all artifacts and unlock the Final Boss Lair.")
+    display_status()
+    
+    while current_location != 'Final Boss Lair':
+        command = input("\nChoose a direction (north/south/east/west): ").strip().lower()
+        if command in ['north', 'south', 'east', 'west']:
+            navigate(command)
+        else:
+            print("Invalid choice. Please choose a valid direction.")
+
+    print("Well done! You've gathered all the artifacts and unlocked the Final Boss Lair!")
+
+# Start 
+start_adventure()
