@@ -1,79 +1,111 @@
-# Define the rooms
+# ----- World -----
 locations = {
-    'Fire Hall': {'east': 'Water Hall', 'south': 'Muddy Room'},
-    'Water Hall': {'west': 'Fire Hall', 'east': 'Air Hall', 'south': 'Steam Room'},
-    'Air Hall': {'west': 'Water Hall', 'east': 'Earth Hall', 'south': 'Dust Room'},
-    'Earth Hall': {'west': 'Air Hall', 'south': 'Lava Room'},
-    'Muddy Room': {'north': 'Fire Hall'},
-    'Steam Room': {'north': 'Water Hall'},
-    'Dust Room': {'north': 'Air Hall'},
-    'Lava Room': {'north': 'Earth Hall', 'east': 'Final Boss Lair'},
-    'Final Boss Lair': {}
+    "Fire Hall":  {"east": "Water Hall", "south": "Muddy Room"},
+    "Water Hall": {"west": "Fire Hall", "east": "Air Hall", "south": "Steam Room"},
+    "Air Hall":   {"west": "Water Hall", "east": "Earth Hall", "south": "Dust Room"},
+    "Earth Hall": {"west": "Air Hall", "south": "Lava Room"},
+    "Muddy Room": {"north": "Fire Hall"},
+    "Steam Room": {"north": "Water Hall"},
+    "Dust Room":  {"north": "Air Hall"},
+    "Lava Room":  {"north": "Earth Hall"},  # east to Boss is unlocked later
+    "Final Boss Lair": {}
 }
 
-# Items located in different locations
 artifacts = {
-    'Water Hall': 'Scroll of Water',
-    'Earth Hall': 'Scroll of Earth',
-    'Fire Hall': 'Scroll of Fire',
-    'Air Hall': 'Scroll of Air',
-    'Lava Room': 'Lava Staff',
-    'Steam Room': 'Mist Book',
-    'Dust Room': 'Dusty Sword'
+    "Water Hall": "Scroll of Water",
+    "Earth Hall": "Scroll of Earth",
+    "Fire Hall":  "Scroll of Fire",
+    "Air Hall":   "Scroll of Air",
+    "Lava Room":  "Lava Staff",
+    "Steam Room": "Mist Book",
+    "Dust Room":  "Dusty Sword",
 }
 
-# Track player's inventory and position
+# ----- Player state -----
 backpack = []
-current_location = 'Fire Hall'
+current_location = "Fire Hall"
 boss_unlocked = False
 
+# ----- Helpers -----
 def display_status():
-    print(f"\nYou are currently in the {current_location}.")
-    print(f"Inventory: {backpack}")
-    if current_location in artifacts:
-        print(f"There is a {artifacts[current_location]} here.")
+    print(f"\nYou are in the {current_location}.")
+    print(f"Inventory: {backpack or '— empty —'}")
+    if current_location in artifacts and artifacts[current_location] not in backpack:
+        print(f"You see a {artifacts[current_location]} here.")
 
-def navigate(direction):
-    global current_location, boss_unlocked
-    
-    if current_location == 'Lava Room' and not boss_unlocked:
+def unlock_boss_if_ready():
+    global boss_unlocked
+    if current_location == "Lava Room" and not boss_unlocked:
         if len(backpack) == len(artifacts):
-            locations['Lava Room']['east'] = 'Final Boss Lair'
+            locations["Lava Room"]["east"] = "Final Boss Lair"
             boss_unlocked = True
-            print("The path to the Final Boss Lair has been revealed!")
-    
-    if direction in locations[current_location]:
-        current_location = locations[current_location][direction]
-        print(f"You head {direction} and arrive at the {current_location}.")
+            print("✨ The path to the Final Boss Lair has been revealed to the east!")
+
+def navigate(direction: str):
+    direction = direction.lower()
+    if direction not in {"north", "south", "east", "west"}:
+        print("Use: north, south, east, or west.")
+        return
+
+    unlock_boss_if_ready()
+
+    exits = locations.get(current_location, {})
+    if direction in exits:
+        global current_location
+        current_location = exits[direction]
+        print(f"You head {direction} to the {current_location}.")
         display_status()
         prompt_pick_up_item()
     else:
-        print(f"Cannot go {direction} from {current_location}. That direction is unavailable.")
+        print(f"🚫 You can’t go {direction} from {current_location}.")
 
 def prompt_pick_up_item():
-    if current_location in artifacts and artifacts[current_location] not in backpack:
-        choice = input(f"Do you want to pick up the {artifacts[current_location]}? (yes/no): ").strip().lower()
-        if choice == 'yes':
-            backpack.append(artifacts[current_location])
-            print(f"You have acquired the {artifacts[current_location]}!")
-        else:
-            print(f"You chose not to pick up the {artifacts[current_location]}.")
-    else:
-        print("There's nothing to collect here.")
+    if current_location in artifacts:
+        item = artifacts[current_location]
+        if item not in backpack:
+            choice = input(f"Pick up the {item}? (yes/no): ").strip().lower()
+            if choice == "yes":
+                backpack.append(item)
+                print(f"✔ You picked up the {item}.")
+            else:
+                print("You leave it for now.")
 
+def show_help():
+    print(
+        "\nCommands:\n"
+        "  north/south/east/west  move between rooms\n"
+        "  inventory              show your items\n"
+        "  help                   show this help\n"
+        "  quit                   exit the game\n"
+    )
+
+# ----- Game loop -----
 def start_adventure():
     print("Welcome to the Avatar-themed Adventure!")
-    print("Your quest is to gather all artifacts and unlock the Final Boss Lair.")
+    print("Collect all artifacts to unlock the Final Boss Lair in the Lava Room.")
     display_status()
-    
-    while current_location != 'Final Boss Lair':
-        command = input("\nChoose a direction (north/south/east/west): ").strip().lower()
-        if command in ['north', 'south', 'east', 'west']:
-            navigate(command)
+    # Offer the Fire Hall item at the very beginning:
+    prompt_pick_up_item()
+
+    while current_location != "Final Boss Lair":
+        cmd = input("\n> ").strip().lower()
+
+        if cmd in {"north", "south", "east", "west"}:
+            navigate(cmd)
+        elif cmd == "inventory":
+            print(f"Inventory: {backpack or '— empty —'}")
+        elif cmd == "help":
+            show_help()
+        elif cmd == "quit":
+            print("Goodbye, adventurer!")
+            return
+        elif cmd == "":
+            continue
         else:
-            print("Invalid choice. Please choose a valid direction.")
+            print("I didn’t understand that. Type 'help' for commands.")
 
-    print("Well done! You've gathered all the artifacts and unlocked the Final Boss Lair!")
+    print("\n🏆 Well done! You gathered all artifacts and reached the Final Boss Lair!")
 
-# Start 
-start_adventure()
+# ----- Start -----
+if __name__ == "__main__":
+    start_adventure()
